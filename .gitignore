@@ -1,0 +1,28 @@
+# data directories
+C60/*
+data/*
+results/*
+runtimes/*
+logs/*
+
+# c++ binary files
+*.o
+*.c
+*.out
+
+# compiled python files
+*.pyc
+*.pycache
+
+# emacs generated files
+*~
+
+# pycharm created files
+.idea/
+
+# miscellaneous
+matlab_examples/
+paper_prep/
+papers/
+paper_drafts/*
+vis/*

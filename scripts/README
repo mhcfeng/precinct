@@ -1,0 +1,7 @@
+1. Use QGIS to generate neighbors and hillpref (qgis_processing.py)
+2. Run ./process_neighbors.sh COUNTY
+3. Run python build_adjacency.py COUNTY CANDIDATE
+4. Run ./simple_example COUNTY CANDIDATE
+5. Run ./gen_barcodes.sh COUNTY CANDIDATE
+6. Run ./build_precinct_key.sh COUNTY
+7. Run ./find_loops.sh CANDIDATE COUNTY

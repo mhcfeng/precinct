@@ -1,0 +1,119 @@
+import csv
+import os.path
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+from osgeo import ogr, osr
+import gdal
+
+
+def match_simplex_key(county, candidate, sc_type):
+    dat_dir = '../data/sc/'+sc_type+'/'+candidate+'/'
+    key_dir = '../data/keys/'+sc_type+'/'+candidate+'/'
+
+    vertex_ids = []
+    simplex_dict = {}
+    try:
+        with open(dat_dir + county + '.dat') as dat_file:
+            i = 0
+            for line in dat_file:
+                line = line.split('\n')[0]
+                dim = line.split(' ')[0]
+                if dim == '0':
+                    vertex_ids.append(i)
+                elif dim == '1':
+                    simplex_dict[i] = [int(v) for v in line.split(' ')[1:]]
+                elif dim == '2':
+                    lines = [int(v) for v in line.split(' ')[1:]]
+                    vertices = [vertex for line in lines for vertex in simplex_dict[line]]
+                    simplex_dict[i] = list(set(vertices))
+                i = i+1
+
+        key_list = []
+        with open(key_dir + county + '-key') as key_file:
+            reader = csv.reader(key_file)
+            for line in reader:
+                key_list.append(line[0])
+        key_dict = dict(zip(vertex_ids, key_list))
+        return key_dict, simplex_dict
+    except IOError:
+        return {}, {}
+
+
+def read_results(county_csv):
+    try:
+        with open(county_csv) as county_file:
+            reader = csv.reader(county_file)
+            features = list(reader)
+        return features
+    except IOError:
+        return []
+
+
+def replace_boundaries(key_dict, simplex_dict, features):
+    for feature in features:
+        dim = int(feature[0])
+        if dim == 1:
+            boundary = feature[3]
+            boundary_simplices = boundary.split(' ')[0:-1]
+            verts = [vert for simplex_id in boundary_simplices for vert in simplex_dict[int(simplex_id)] ]
+            boundary_precincts = [key_dict[vert] for vert in list(set(verts))]
+            feature[3] = ' '.join(boundary_precincts)
+    return features
+
+
+def post_processing(county, candidate, sc_type):
+    if sc_type in ['adj', 'alpha', 'rips', 'ls']:
+        timing_csv = '../runtimes/post_time.csv'
+        with open(timing_csv, 'w+') as timing_file:
+            start_time = time.time()
+            key_dict, simplex_dict = match_simplex_key(county, candidate, sc_type)
+            result_dir = '../results/' + sc_type + '/' + candidate+ '/'
+            if(os.path.isfile(result_dir + county + '.csv')):
+                features = read_results(result_dir + county + '.csv')
+                if features:
+                    features = replace_boundaries(key_dict, simplex_dict, features)
+                    if sc_type in ['adj', 'alpha', 'rips']:
+                        features = replace_ids_centroids(features, county, candidate, sc_type)
+                    # with open(result_dir + county + '_replaced_id.csv', 'w') as output_file:
+                    #     csv_writer = csv.writer(output_file)
+                    #     csv_writer.writerows(features)
+            timing_file.write(county + ',' + sc_type + ',' + candidate + ',' + str(time.time() - start_time))
+
+
+def replace_ids_centroids(features, county, candidate, sc_type):
+    centroid_path = '../data/extractcentroids/' + county + '.csv'
+
+    centroid_dict = {}
+    with open(centroid_path) as centroid_file:
+        reader = csv.reader(centroid_file)
+        next(reader)
+        for line in reader:
+            centroid_dict[line[0]] = np.asarray([float(line[1]), float(line[2])])
+
+    for f in features:
+        if int(f[0]) == 1:
+            precincts = (f[3].split(' '))
+            f[3] = np.asarray([centroid_dict[p] for p in precincts])
+    return features
+
+
+
+def generate_loop_images(county, candidate, sc_type):
+    pass
+
+
+def main():
+    with open('../full-list') as county_file:
+        # for county in county_file:
+        for county in ['001-alameda']:
+            # county = county.split('\n')[0]
+            # for candidate in ['hillary', 'trump']:
+            for candidate in ['hillary']:
+                # for sc_type in ['adj', 'alpha', 'rips','ls']:
+                for sc_type in ['adj']:
+                    post_processing(county, candidate, sc_type)
+
+
+if __name__ == '__main__':
+    main()
