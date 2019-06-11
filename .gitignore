@@ -28,3 +28,4 @@ paper_drafts/*
 vis/*
 scripts/colorloops.py
 scripts/post_processing_hallelujah.py
+scripts/*.sh

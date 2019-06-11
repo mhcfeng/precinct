@@ -98,14 +98,14 @@ def generate_base_image(county, candidate, max_pixels):
         r = g = b = 255
         if hill_pct>0:
             hill_grade = int(hill_pct*5)+1
-            r = 255 - 30*hill_grade
-            g = 255 - 17*hill_grade
-            b = 255 - 9*hill_grade
+            r = 255 - 22*hill_grade
+            g = 255 - 12*hill_grade
+            b = 255 - 7*hill_grade
         elif hill_pct<0:
             hill_grade = int(-hill_pct*5)+1
-            r = 255 - 3*hill_grade
-            g = 255 - 23*hill_grade
-            b = 255 - 31*hill_grade
+            r = 255 - 2*hill_grade
+            g = 255 - 18*hill_grade
+            b = 255 - 25*hill_grade
         feat.SetField('r', r)
         feat.SetField('g', g)
         feat.SetField('b', b)
@@ -184,13 +184,16 @@ def read_ls_loops(county, candidate, features, immediate_only = True):
         entry_time = int(f[1])
         boundary = f[3].split(' ')
         boundary = np.asarray([int(b) for b in boundary])
-        persistence = 20 - (int(f[2])-int(f[1]))
+        persistence = (20 - (int(f[2])-int(f[1])))/20
+        persistence_scaling = int(persistence*5)
         if candidate == 'hillary':
-            r = 0
-            blue = min(0+10*persistence, 255)
+                r = 65 - persistence_scaling*12
+                g = 148 - persistence_scaling*20
+                blue = 197 - persistence_scaling*20
         elif candidate == 'trump':
-            r = min(0+10*persistence, 255)
-            blue = 0
+                r = 213 - persistence_scaling*22
+                g = 95 - persistence_scaling*19
+                blue = 76 - persistence_scaling*9
         ydata = rows - (boundary/cols).astype(np.int)
         xdata = boundary%cols
         ordered_xy = gen_clockwise_around_centroid(xdata, ydata)
@@ -198,9 +201,9 @@ def read_ls_loops(county, candidate, features, immediate_only = True):
         xdata = np.append(xdata, xdata[0])
         ydata = ordered_xy[:,1]
         ydata = np.append(ydata, ydata[0])
-        color_tuple = (r/255,0,blue/255)
+        color_tuple = (r/255,g/255,blue/255)
         if (immediate_only and entry_time==0) or not immediate_only :
-            ax.plot(xdata,ydata, linewidth=1, color=color_tuple)
+            ax.plot(xdata,ydata, linewidth=2*(persistence_scaling/5), color=color_tuple)
 
     # fig.patch.set_visible(False)
     ax.axis('off')
@@ -241,14 +244,18 @@ def read_centroid_loops(county, candidate, features, sc_type, max_pixels):
             f[3] = np.transpose((np.linalg.inv(affine)@np.transpose(f[3]-translation)).astype(int))
 
             persistence = int(f[2])-int(f[1])
-            persistence_scaling = (max_persistence - persistence)/(max_persistence)
+            persistence_scaling = int((max_persistence - persistence)/(max_persistence)*5)
+            persistence_scaling = max(0, persistence_scaling)
+            persistence_scaling = min(persistence_scaling, 5)
 
             if candidate == 'hillary':
-                r = g = 0
-                blue = min(int(persistence_scaling*255),255)
+                r = 65 - persistence_scaling*12
+                g = 148 - persistence_scaling*20
+                blue = 197 - persistence_scaling*20
             elif candidate == 'trump':
-                r = min(int(persistence_scaling*255),255)
-                g = blue = 0
+                r = 213 - persistence_scaling*22
+                g = 95 - persistence_scaling*19
+                blue = 76 - persistence_scaling*9
 
             xdata = (f[3])[:, 0]
             ydata = (f[3])[:, 1]
@@ -258,7 +265,7 @@ def read_centroid_loops(county, candidate, features, sc_type, max_pixels):
             ydata = ordered_xy[:,1]
             ydata = np.append(ydata, ydata[0])
             color_tuple = (r/255, g/255, blue/255)
-            ax.plot(xdata,ydata, linewidth=1, color=color_tuple)
+            ax.plot(xdata,ydata, linewidth=(persistence_scaling/5+1), color=color_tuple)
 
     ax.axis('off')
     output_file = '../results/maps/' + sc_type + '/' + candidate + '/' + county + '.png'
@@ -301,7 +308,7 @@ def main():
             for candidate in ['hillary', 'trump']:
             # for candidate in ['hillary']:
             #     for sc_type in ['adj', 'alpha', 'rips','ls']:
-                for sc_type in ['adj', 'alpha', 'rips']:
+                for sc_type in ['adj', 'alpha', 'rips', 'ls']:
                     post_processing(county, candidate, sc_type)
 
 
