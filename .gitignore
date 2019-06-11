@@ -29,3 +29,4 @@ vis/*
 scripts/colorloops.py
 scripts/post_processing_hallelujah.py
 scripts/*.sh
+scripts/qgis_processing.py
