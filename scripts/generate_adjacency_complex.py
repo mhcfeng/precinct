@@ -3,6 +3,7 @@ import invr
 import numpy as np
 import time
 
+
 def split_precincts(county_csv, split_key, header=True):
     hillary_list = []
     trump_list = []
@@ -40,11 +41,11 @@ def replace_neighbour_keys(county, candidate, precinct_list, sc_type):
     with open(key_file) as file:
         csv_reader = csv.reader(file)
         for line in csv_reader:
-            key_dictionary[line[0]]=line[1]
+            key_dictionary[line[0]] = line[1]
 
     for precinct in precinct_list:
         neighbours = precinct[1]
-        neighbours_array=neighbours.split(',')
+        neighbours_array = neighbours.split(',')
         neighbour_keys = []
         for neighbour in neighbours_array:
             if neighbour in key_dictionary:
@@ -56,7 +57,6 @@ def replace_neighbour_keys(county, candidate, precinct_list, sc_type):
 
 
 def form_simplicial_complex(county, candidate, precinct_list):
-
     maxDimension = 3
     adjacencies = list(map(lambda m: m[1], precinct_list))
     preferences = np.asarray(list(map(lambda m: float(m[2]), precinct_list)))
@@ -64,22 +64,19 @@ def form_simplicial_complex(county, candidate, precinct_list):
     V = invr.incremental_vr(V, adjacencies, maxDimension)
     outputDir = '../data/sc/adj/' + candidate + '/'
 
+    entryTimes = np.floor((1 - np.abs(preferences)) * 100 / 5)
 
+    entryTimesSub = [entryTimes[max(simplex) - 1] for simplex in V]
 
-    entryTimes = np.floor((1-np.abs(preferences))*100/5)
-
-    entryTimesSub = [entryTimes[max(simplex)-1] for simplex in V]
-
-    np.savetxt(outputDir + county + '_entry_times.csv',entryTimesSub,
-               delimiter=' ',fmt='%i')
+    np.savetxt(outputDir + county + '_entry_times.csv', entryTimesSub,
+               delimiter=' ', fmt='%i')
 
     phatFormatV = invr.replace_face(V)
 
-
-    F = open(outputDir + county + ".dat","w")
+    F = open(outputDir + county + ".dat", "w")
 
     for face in phatFormatV:
-        F.write(str(len(face)-1))
+        F.write(str(len(face) - 1))
         if len(face) > 1:
             for simplex in face:
                 F.write(" " + str(simplex))
@@ -90,7 +87,7 @@ def form_simplicial_complex(county, candidate, precinct_list):
 def main():
     with open('../full-list') as county_file:
         sc_type = 'adj'
-        timing_csv = '../runtimes/'+sc_type+'_times.csv'
+        timing_csv = '../runtimes/' + sc_type + '_times.csv'
         with open(timing_csv, 'w') as timing_file:
             for county in county_file:
                 county = county.split('\n')[0]
@@ -103,11 +100,11 @@ def main():
                 start_time = time.time()
                 if hillary_list:
                     form_simplicial_complex(county, 'hillary', hillary_list)
-                timing_file.write(county+',adj,hillary,'+str(time.time()-start_time)+'\n')
+                timing_file.write(county + ',adj,hillary,' + str(time.time() - start_time) + '\n')
                 start_time = time.time()
                 if trump_list:
                     form_simplicial_complex(county, 'trump', trump_list)
-                timing_file.write(county+',adj,trump,'+str(time.time()-start_time)+'\n')
+                timing_file.write(county + ',adj,trump,' + str(time.time() - start_time) + '\n')
 
 
 if __name__ == '__main__':
